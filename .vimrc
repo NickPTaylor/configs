@@ -1,57 +1,55 @@
 set nocompatible              " be iMproved, required
 filetype off                  " required
 
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
-" alternatively, pass a path where Vundle should install plugins
-"call vundle#begin('~/some/path/here')
+call plug#begin('~/.vim/plugged')
 
-" let Vundle manage Vundle, required
-Plugin 'VundleVim/Vundle.vim'
+Plug 'tmhedberg/SimpylFold'
+Plug 'vim-scripts/indentpython.vim'
+Plug 'tpope/vim-surround'
+Plug 'scrooloose/syntastic'
+Plug 'nvie/vim-flake8'
+Plug 'jnurmine/Zenburn'
+Plug 'altercation/vim-colors-solarized'
+Plug 'scrooloose/nerdtree'
+Plug 'jistr/vim-nerdtree-tabs'
+Plug 'kien/ctrlp.vim'
+Plug 'tpope/vim-fugitive'
+Plug 'vim-scripts/Align'
+Plug 'godlygeek/tabular'
+Plug 'tpope/vim-fugitive'
+Plug 'tpope/vim-surround'
+Plug 'stevearc/vim-arduino'
+Plug 'Glench/Vim-Jinja2-Syntax'
+Plug 'othree/html5.vim'
+Plug 'elzr/vim-json'
+Plug 'fatih/vim-go'
+Plug 'pandysong/ghost-text.vim'
 
-" Add all plugins here
-Plugin 'tmhedberg/SimpylFold'
-Plugin 'vim-scripts/indentpython.vim'
-Plugin 'davidhalter/jedi-vim'
-Plugin 'tpope/vim-surround'
-Plugin 'scrooloose/syntastic'
-Plugin 'nvie/vim-flake8'
-Plugin 'jnurmine/Zenburn'
-Plugin 'altercation/vim-colors-solarized'
-Plugin 'scrooloose/nerdtree'
-Plugin 'jistr/vim-nerdtree-tabs'
-Plugin 'kien/ctrlp.vim'
-Plugin 'tpope/vim-fugitive'
-Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
+" For deoplete.
+if has('nvim')
+  Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+else
+  Plug 'Shougo/deoplete.nvim'
+  Plug 'roxma/nvim-yarp'
+  Plug 'roxma/vim-hug-neovim-rpc'
+endif
 
-" All of your Plugins must be added before the following line
-call vundle#end()            " required
-filetype plugin indent on    " required
-
-" To ignore plugin indent changes, instead use:
-"filetype plugin on
-"
-" Brief help
-" :PluginList       - lists configured plugins
-" :PluginInstall    - installs plugins; append `!` to update or just :PluginUpdate
-" :PluginSearch foo - searches for foo; append `!` to refresh local cache
-" :PluginClean      - confirms removal of unused plugins; append `!` to auto-approve removal
-"
-" see :h vundle for more details or wiki for FAQ
-" Put your non-Plugin stuff after this line
-
-" Use pathogen for package management
-" execute pathogen#infect()
+call plug#end()
 
 " map jk to escape
 inoremap jk <ESC>
 set modeline
 
+
 " colour scheme
 if has('gui_running')
   set background=dark
   colorscheme solarized
+  if has("gui_gtk2")
+      set guifont=Monospace\ 10
+  elseif has("gui_win32")
+      set guifont=Consolas:h11
+  end
 else
   colorscheme zenburn
 endif
@@ -67,8 +65,25 @@ set foldlevel=99
 " make encoding UTF8
 set encoding=utf-8
 
-" for python files
-au BufNewFile,BufRead *.py
+" fill rest of line with characters
+function! FillLine( str )
+    " set tw to the desired total length
+    let tw = &textwidth
+    if tw==0 | let tw = 80 | endif
+    " strip trailing spaces first
+    .s/[[:space:]]*$//
+    " calculate total number of 'str's to insert
+    let reps = (tw - col("$")) / len(a:str)
+    " insert them, if there's room, removing trailing spaces (though forcing
+    " there to be one)
+    if reps > 0
+        .s/$/\=(' '.repeat(a:str, reps))/
+    endif
+endfunction
+map <F2> :call FillLine('-')
+
+" for python and c files
+au BufNewFile,BufRead *.py,*.c,*.cpp,*.ino,*.json,*.go
     \ set tabstop=4 |
     \ set softtabstop=4 |
     \ set shiftwidth=4 |
@@ -79,6 +94,19 @@ au BufNewFile,BufRead *.py
     \ set nu |
     \ set colorcolumn=+1
 
+
+" mark erroneous white space in python files
+au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
+
+" for C
+map <F4> :w<cr>:make!<cr>
+map <F5> :w<cr>:make!<cr>:!./%<<cr>
+
+" other formatting 
+set hlsearch
+nnoremap <F3> :set hlsearch!<CR>
+nnoremap <silent> <C-L> :nohlsearch<CR><C-L>
+
 " enable syntax highlighting
 let python_highlight_all=1
 syntax on
@@ -86,12 +114,10 @@ syntax on
 "define BadWhitespace before using in a match
 highlight BadWhitespace ctermbg=red guibg=darkred
 
-" mark erroneous white space in python files
-au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
 
 " auto-complete customisation
-let g:ycm_autoclose_preview_window_after_completion=1
-map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
+" let g:ycm_autoclose_preview_window_after_completion=1
+" map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
 
 " do not show .pyc in nerdtree
 let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
@@ -123,6 +149,10 @@ endfunction
 " REQUIRED. This makes vim invoke Latex-Suite when you open a tex file.
 filetype plugin on
 
+" for omnicomplete and map ctrl/space to be same as youcompleteme
+set omnifunc=syntaxcomplete#Complete 
+inoremap <C-@> <c-x><c-o>
+
 " IMPORTANT: win32 users will need to have 'shellslash' set so that latex
 " can be called correctly.
 set shellslash
@@ -139,3 +169,15 @@ filetype indent on
 " 'plaintex' instead of 'tex', which results in vim-latex not being loaded.
 " The following changes the default filetype back to 'tex':
 let g:tex_flavor='latex'
+
+let g:Tex_DefaultTargetFormat='pdf'
+let g:Tex_ViewRule_pdf='evince'
+
+function SetXeTex()
+  let g:Tex_CompileRule_pdf = 'xelatex -aux-directory=F:/Vim/my_latex_doc/temp --synctex=-1 -src-specials -interaction=nonstopmode $*'
+endfunction
+map <Leader>lx :<C-U>call SetXeTex()<CR><
+
+" for vim-go
+let g:deoplete#enable_at_startup = 1
+call deoplete#custom#option('omni_patterns', { 'go': '[^. *\t]\.\w*' })
